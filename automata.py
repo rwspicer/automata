@@ -5,7 +5,7 @@ import scipy.misc
 from bokeh.io import curdoc
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, Slider, ColorBar, LinearColorMapper,Ticker, SaveTool,CategoricalColorMapper
-from bokeh.palettes import gray,viridis, Spectral5
+from bokeh.palettes import gray,viridis, Spectral5, Category10
 from bokeh.plotting import figure
 
 
@@ -35,7 +35,7 @@ def setup(rows, cols, rules):
         tools = [SaveTool()]
     )#, tooltips=TOOLTIPS)#, tools=[tool,])
 
-    color_mapper = LinearColorMapper(palette="Spectral5", high=5, low=0)
+    color_mapper = LinearColorMapper(palette="Spectral10", high=10, low=0)
     # color_mapper = CategoricalColorMapper(palette=["white", "brown", "blue", "green"], factors=[0, 1,2,3])
     p.image('image', x=0, y=0, dw=w, dh=h, source=source, color_mapper=color_mapper)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=12, border_line_color=None, location=(0,1) )
@@ -96,13 +96,22 @@ def time_step(event):
 
     FDD= mutable_values.data['FDD'][0]
     alpha = mutable_values.data['alpha'][0]
-    rules.rules(out, np.array(source.data['image'][0]), time_step = 1, alpha=alpha, FDD=FDD  )
+    TDD = mutable_values.data['TDD'][0]
+    stage = mutable_values.data['stage'][0]
+    feedback = rules.rules(out, np.array(source.data['image'][0]), time_step = 1, alpha=alpha, FDD=FDD, TDD = TDD, stage=stage  )
     source.data.update(image=[out])
+    
+    # print(feedback)
+    mutable_values.data.update(stage=[feedback['stage']])
+
+    
 
 
 def update_fdd(attr, old, new):
     mutable_values.data.update(FDD=[new])
 
+def update_tdd(attr, old, new):
+    mutable_values.data.update(FDD=[new])
 
 def update_alpha(attr, old, new):
     mutable_values.data.update(alpha=[new])
@@ -123,10 +132,12 @@ def automata (p, rules):
 
     fslider = Slider(title="FDD", start=0, end=10000, value=500)
     fslider.on_change('value', update_fdd)
+    tslider = Slider(title="TDD", start=0, end=10000, value=500)
+    tslider.on_change('value', update_tdd)
     aslider = Slider(title="alpha", start=0, end=5, value=2.5)
     aslider.on_change('value', update_alpha)
 
-    layout = column(row(step, reset), row(p, div), fslider, aslider)
+    layout = column(row(step, reset), row(p, div), fslider, tslider, aslider)
 
 
 
@@ -139,11 +150,13 @@ def automata (p, rules):
 # import sys
 # args = sys.argv
 
-rules_mod = 'lakes'
+rules_mod = 'thermcycle'
 rules = importlib.__import__(rules_mod)
 p, source = setup(100,100,rules)
 
-mutable_values = ColumnDataSource(data=dict(FDD=[500],alpha=[2.5]))
+mutable_values = ColumnDataSource(data=dict(
+    FDD=[500], TDD=[500], alpha=[2.5], stage=[0]
+))
 
 
 
