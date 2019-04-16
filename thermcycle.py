@@ -3,18 +3,22 @@ import automata_lib as al
 
 
 AIR = 2
-WATER = 0
+WATER = 0 
 SOIL = 3 ## frozen soil
 FROZEN_SOIL = 3 ## frozen soil
-ICE = 1
+ICE = 1 #surface ICE
+
+
 
 THAWED_SOIL = 4
 
-OTHER = 5
+GROUND_ICE = 5
 
-WATER_LEVEL = 55
+OTHER = 6
 
-def init(rows = 100, cols = 100):
+# WATER_LEVEL = 55
+
+def init(rows = 100, cols = 100, water_level=55):
     grid = np.zeros([rows,cols])  + AIR
     grid[:60] = SOIL
     w = 25 + np.random.randint(0,20)
@@ -23,7 +27,7 @@ def init(rows = 100, cols = 100):
     for i in range(10,60)[::-1]:
         # print(i)
        
-        if i > WATER_LEVEL: 
+        if i > water_level: 
             grid [i,center-w:center+w] = AIR
         else:
             grid [i,center-w:center+w] = WATER
@@ -32,7 +36,7 @@ def init(rows = 100, cols = 100):
             # center += c_shift
     return grid
 
-def in_water_gravity (rr, cc, N, out_img):
+def in_water_gravity (rr, cc, N, out_img, WATER_LEVEL = 55):
     # in water gravity
     cur = N[1,1]
     if cur == THAWED_SOIL and N[2,1] ==  WATER and rr <= WATER_LEVEL:
@@ -45,6 +49,15 @@ def in_water_gravity (rr, cc, N, out_img):
 
     if cur == FROZEN_SOIL and (N[1] == np.array([WATER, FROZEN_SOIL, WATER])).all():
         out_img[rr,cc] = THAWED_SOIL
+
+    if cur == WATER and rr > WATER_LEVEL:
+        out_img[rr,cc] = AIR
+    
+    if cur == AIR and rr <= WATER_LEVEL:
+        out_img[rr,cc] = WATER
+
+    if cur == ICE and N[2,1] == AIR:
+        out_img[rr,cc] = AIR
 
 def freezing_rules (rr, cc, in_img, out_img, params = {}):
 
@@ -87,9 +100,9 @@ def freezing_rules (rr, cc, in_img, out_img, params = {}):
     # if cur == OTHER:
     #     out_img[rr,cc] = FROZEN_SOIL
 
-    in_water_gravity (rr, cc, N, out_img)
+    in_water_gravity (rr, cc, N, out_img, params['water_level'])
 
-    if thickness >= max_dm_thickness:
+    if thickness >= max_dm_thickness or (in_img != WATER).all():
         return 1
     else:
         return 0
@@ -123,7 +136,12 @@ def thawing_rules (rr, cc, in_img, out_img, params = {}):
 
 
 
-    ## EROSION
+    ## in water EROSION
+
+    ## Soil thaws under water
+    if cur == FROZEN_SOIL and N[1,0] == WATER:
+        out_img[rr,cc] = THAWED_SOIL
+
     
     # right side Erosion
     if cur == THAWED_SOIL and N[1,0] == WATER and np.random.random() > .75:
@@ -135,7 +153,19 @@ def thawing_rules (rr, cc, in_img, out_img, params = {}):
         out_img[rr,cc] = WATER
         out_img[rr,cc+1] = THAWED_SOIL
 
-    in_water_gravity (rr, cc, N, out_img)
+    in_water_gravity (rr, cc, N, out_img, params['water_level'])
+
+    #above water erosion
+    # right side Erosion
+    if cur == THAWED_SOIL and N[1,0] == AIR and np.random.random() > .65:
+        out_img[rr,cc] = AIR
+        out_img[rr,cc-1] = THAWED_SOIL
+
+    # left side Erosion
+    if cur == THAWED_SOIL and N[1,2] == AIR and np.random.random() > .65:
+        out_img[rr,cc] = AIR
+        out_img[rr,cc+1] = THAWED_SOIL
+
 
     if cur == AIR and N[0,1] in (FROZEN_SOIL, THAWED_SOIL):
         out_img[rr,cc] = THAWED_SOIL
@@ -177,15 +207,17 @@ def rules(out_img, in_img, time_step, **kwargs):
     # print(max_dm_thickness)
 
     rv_grid = np.zeros(in_img.shape)
-    for rr in range(in_img.shape[0])[::-1]:
-        for cc in range(in_img.shape[1]):
+    for rr in range(in_img.shape[0] )[::-1]:
+        for cc in range(in_img.shape[1]-1):
             if stage == 0:
                 rv_grid[rr,cc] = freezing_rules(rr, cc, in_img, out_img, params={
                     "max_dm_it": max_dm_thickness,
+                    "water_level": kwargs['water_level']
                 })
             else: 
                 rv_grid[rr,cc] = thawing_rules(rr, cc, in_img, out_img, params= {
                     "max_dm_td": max_dm_depth,
+                    "water_level": kwargs['water_level']
                 })
             
     # print( len(out_img.flatten()[out_img.flatten() == WATER]) )

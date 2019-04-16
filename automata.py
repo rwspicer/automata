@@ -24,7 +24,7 @@ TIME_STEP = 0
 
 def setup(rows, cols, rules):
     
-    init_img = rules.init()
+    init_img = rules.init(cols = 100, water_level=55)
     source = ColumnDataSource(data=dict(image=[np.array(init_img)]))
     
 
@@ -47,7 +47,7 @@ def setup(rows, cols, rules):
 
 
 
-def add_drawing(p, ink=1):
+def add_drawing(p, ink=5):
     point_attributes = ['x','y','sx','sy']                     # Point events
     pan_attributes = point_attributes + ['delta_x', 'delta_y'] # Pan event
     jscb = CustomJS(args=dict(source=source), code="""
@@ -98,7 +98,8 @@ def time_step(event):
     alpha = mutable_values.data['alpha'][0]
     TDD = mutable_values.data['TDD'][0]
     stage = mutable_values.data['stage'][0]
-    feedback = rules.rules(out, np.array(source.data['image'][0]), time_step = 1, alpha=alpha, FDD=FDD, TDD = TDD, stage=stage  )
+    wl = mutable_values.data['water_level'][0]
+    feedback = rules.rules(out, np.array(source.data['image'][0]), time_step = 1, alpha=alpha, FDD=FDD, TDD = TDD, stage=stage, water_level=wl  )
     source.data.update(image=[out])
     
     # print(feedback)
@@ -117,9 +118,12 @@ def update_alpha(attr, old, new):
     mutable_values.data.update(alpha=[new])
 
 
+def update_water_level(attr, old, new):
+    mutable_values.data.update(water_level=[new])
 
 def s_reset(event):
-    source.data.update(image=[rules.init()])
+    source.data.update(image=[rules.init(cols=100, water_level=mutable_values.data['water_level'][0])])
+    # mutable_values.data.update(water_level=[55])
 
 
 def automata (p, rules):
@@ -136,6 +140,9 @@ def automata (p, rules):
     tslider.on_change('value', update_tdd)
     aslider = Slider(title="alpha", start=0, end=5, value=2.5)
     aslider.on_change('value', update_alpha)
+
+    aslider = Slider(title="water_level", start=0, end=100, value=55)
+    aslider.on_change('value', update_water_level)
 
     layout = column(row(step, reset), row(p, div), fslider, tslider, aslider)
 
@@ -155,7 +162,7 @@ rules = importlib.__import__(rules_mod)
 p, source = setup(100,100,rules)
 
 mutable_values = ColumnDataSource(data=dict(
-    FDD=[500], TDD=[500], alpha=[2.5], stage=[0]
+    FDD=[500], TDD=[500], alpha=[2.5], stage=[0], water_level=[55],
 ))
 
 
