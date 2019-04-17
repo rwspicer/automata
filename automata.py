@@ -47,7 +47,7 @@ def setup(rows, cols, rules):
 
 
 
-def add_drawing(p, ink=5):
+def add_drawing(p, ink=3):
     point_attributes = ['x','y','sx','sy']                     # Point events
     pan_attributes = point_attributes + ['delta_x', 'delta_y'] # Pan event
     jscb = CustomJS(args=dict(source=source), code="""
@@ -112,7 +112,7 @@ def update_fdd(attr, old, new):
     mutable_values.data.update(FDD=[new])
 
 def update_tdd(attr, old, new):
-    mutable_values.data.update(FDD=[new])
+    mutable_values.data.update(TDD=[new])
 
 def update_alpha(attr, old, new):
     mutable_values.data.update(alpha=[new])
@@ -129,7 +129,7 @@ def s_reset(event):
 def automata (p, rules):
 
 
-    curdoc().title = "Image Blur"
+    curdoc().title = "automata"
     div = Div(width=1000)
     step = Button(label="Step", button_type="success")
     reset = Button(label="Reset", button_type="success")
