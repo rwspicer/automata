@@ -7,7 +7,7 @@ from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, Slider, ColorBar, LinearColorMapper,Ticker, SaveTool,CategoricalColorMapper
 from bokeh.palettes import gray,viridis, Spectral5, Category10
 from bokeh.plotting import figure
-
+from bokeh.models.widgets import Div
 
 
 import numpy as np
@@ -39,7 +39,7 @@ def setup(rows, cols, rules):
     # color_mapper = CategoricalColorMapper(palette=["white", "brown", "blue", "green"], factors=[0, 1,2,3])
     p.image('image', x=0, y=0, dw=w, dh=h, source=source, color_mapper=color_mapper)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=12, border_line_color=None, location=(0,1) )
-    p.add_layout(color_bar, 'right')
+    # p.add_layout(color_bar, 'right')
 
     p.toolbar.logo = None
     # p.toolbar_location = None
@@ -141,10 +141,24 @@ def automata (p, rules):
     aslider = Slider(title="alpha", start=0, end=5, value=2.5)
     aslider.on_change('value', update_alpha)
 
-    aslider = Slider(title="water_level", start=0, end=100, value=55)
-    aslider.on_change('value', update_water_level)
+    wlslider = Slider(title="water_level", start=0, end=100, value=55)
+    wlslider.on_change('value', update_water_level)
 
-    layout = column(row(step, reset), row(p, div), fslider, tslider, aslider)
+    div = Div(text="""
+        <img src="https://github.com/rwspicer/automata/blob/master/auto_colors.png?raw=true">.
+        <H1>Cellular Automata based simulation of Thermokarst Lake Cycle</H1>
+        <p>Each pixel represnets 10 cm x 10 cm</p>
+        <p>Hit the 'Step' button to advance the simulation time step</p>
+        <p>Hit the 'Reset' button to reset simulation</p>
+        <p>The FDD slider controls how cold winters are (higher is colder)</p>
+        <p>The TDD slider controls how warm summers are (higher is warmer)</p>
+        <p>The alpha slider controls a cosant for the Stefan equation that represses other climate/location conditions</p>
+        <p>The water_level slider controls water level in pixel height</p>
+        
+    """,
+width=500, height=500)
+
+    layout = column(row(step, reset), row(p, div), fslider, tslider, aslider, wlslider)
 
 
 
